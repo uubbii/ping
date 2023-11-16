@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    /* 스타일 시트로 게임 요소 스타일 지정 */
+    #game-board {
+      width: 480px;
+      height: 320px;
+      border: 2px solid #000;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* 공, 패들, 벽돌 스타일 지정 */
+    .ball {
+      width: 20px;
+      height: 20px;
+      background-color: #f00;
+      border-radius: 50%;
+      position: absolute;
+    }
+
+    .paddle {
+      width: 80px;
+      height: 10px;
+      background-color: #00f;
+      position: absolute;
+      bottom: 10px;
+    }
+
+    .brick {
+      width: 60px;
+      height: 20px;
+      background-color: #0f0;
+      position: absolute;
+    }
+
+    /* 점수 스타일 지정 */
+    #score {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      font-size: 24px;
+      color: #000;
+    }
+  </style>
+</head>
+<body>
+  <div id="game-board">
+    <!-- 벽돌을 이곳에 추가 -->
+    <div class="ball"></div>
+    <div class="paddle"></div>
+  </div>
+  <!-- 점수를 표시할 요소 추가 -->
+  <div id="score">Score: 0</div>
+
+  <script>
+    // JavaScript로 게임 로직 작성
+    const gameBoard = document.getElementById("game-board");
+    const ball = document.querySelector(".ball");
+    const paddle = document.querySelector(".paddle");
+    const scoreElement = document.getElementById("score");
+
+    let ballX = 240;
+    let ballY = 160;
+    let ballSpeedX = 5;
+    let ballSpeedY = 5;
+    let paddleX = 200;
+    let score = 0;
+
+    // 시작 위치 기억
+    const startingBallX = ballX;
+    const startingBallY = ballY;
+
+    // 벽돌 배열 생성
+    const bricks = [];
+    const brickRows = 4;
+    const brickCols = 8;
+
+    function createBricks() {
+      for (let i = 0; i < brickRows; i++) {
+        for (let j = 0; j < brickCols; j++) {
+          const brick = document.createElement("div");
+          brick.classList.add("brick");
+          brick.style.top = (i * 30) + "px";
+          brick.style.left = (j * 70) + "px";
+          gameBoard.appendChild(brick);
+          bricks.push(brick);
+        }
+      }
+    }
+
+    createBricks(); // 초기 벽돌 생성
+
+    // 패들 이동 방향과 속도 변수 추가
+    let paddleSpeed = 0;
+    const paddleSpeedX = 5;
+
+    function resetGame() {
+      ballX = startingBallX;
+      ballY = startingBallY;
+      ballSpeedX = 5;
+      ballSpeedY = 5;
+      paddleX = 200;
+      score = 0;
+      scoreElement.innerText = "Score: 0";
+
+      // 모든 벽돌 제거
+      bricks.forEach(function(brick) {
+        gameBoard.removeChild(brick);
+      });
+      bricks.length = 0;
+
+      createBricks(); // 새로운 벽돌 생성
+    }
+
+    function updateGameArea() {
+      ballX += ballSpeedX;
+      ballY += ballSpeedY;
+
+      // 공이 좌우 경계에 닿으면 반대 방향으로 튕깁니다.
+      if (ballX + ball.clientWidth > gameBoard.clientWidth || ballX < 0) {
+        ballSpeedX = -ballSpeedX;
+      }
+
+      if (ballY < 0) {
+        ballSpeedY = -ballSpeedY;
+      }
+
+      // 공이 아래 경계로 내려가면 게임 오버 처리
+      if (ballY + ball.clientHeight > gameBoard.clientHeight) {
+        alert("게임 종료! Score: " + score);
+        resetGame(); // 게임을 재시작하도록 호출
+      }
+
+      // 패들과 공의 충돌 처리
+      if (ballY + ball.clientHeight > gameBoard.clientHeight - paddle.clientHeight && ballX > paddleX && ballX < paddleX + paddle.clientWidth) {
+        ballSpeedY = -ballSpeedY;
+      }
+
+      gameBoard.style.backgroundColor = "#eee";
+      ball.style.left = ballX + "px";
+      ball.style.top = ballY + "px";
+      paddle.style.left = paddleX + "px";
+
+      // 패들 이동 로직
+      paddleX += paddleSpeed;
+      if (paddleX < 0) {
+        paddleX = 0;
+      } else if (paddleX + paddle.clientWidth > gameBoard.clientWidth) {
+        paddleX = gameBoard.clientWidth - paddle.clientWidth;
+      }
+
+      // 벽돌과 공의 충돌 처리 및 점수 업데이트
+      bricks.forEach(function(brick, index) {
+        if (
+          ballY < brick.offsetTop + brick.clientHeight &&
+          ballY + ball.clientHeight > brick.offsetTop &&
+          ballX + ball.clientWidth > brick.offsetLeft &&
+          ballX < brick.offsetLeft + brick.clientWidth
+        ) {
+          ballSpeedY = -ballSpeedY;
+          brick.style.display = "none"; // 벽돌 숨기기
+          bricks.splice(index, 1); // 벽돌 배열에서 제거
+          score += 10; // 점수 10점 추가
+          scoreElement.innerText = "Score: " + score; // 점수 업데이트
+        }
+      });
+
+      // 모든 벽돌을 깼는지 확인
+      if (bricks.length === 0) {
+        alert("모든 벽돌을 깼습니다! 게임 클리어! Score: " + score);
+        resetGame(); // 게임을 재시작하도록 호출
+      }
+    }
+
+    // 방향키 입력 처리
+    document.addEventListener("keydown", function(event) {
+      if (event.key === "ArrowLeft") {
+        paddleSpeed = -paddleSpeedX;
+      }
+      if (event.key === "ArrowRight") {
+        paddleSpeed = paddleSpeedX;
+      }
+    });
+
+    document.addEventListener("keyup", function(event) {
+      if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+        paddleSpeed = 0;
+      }
+    });
+
+    resetGame(); // 게임을 초기화하여 시작 위치로 설정
+    setInterval(updateGameArea, 20); // 20ms마다 게임 업데이트 함수 호출
+  </script>
+</body>
+</html>
